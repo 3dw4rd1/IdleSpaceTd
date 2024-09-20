@@ -8,14 +8,14 @@ class TownCentre:
         self.radius = 50
         self.health = 1000
         self.max_health = 1000
-        self.color = (0, 100, 255)
-        self.highlight_color = (100, 200, 255)
-        self.shadow_color = (0, 50, 150)
+        self.base_color = (192, 192, 192)  # Silver base color
+        self.highlight_color = (220, 220, 220)  # Lighter silver for highlights
+        self.shadow_color = (160, 160, 160)  # Darker silver for shadows
 
         # Laser attack properties
         self.laser_damage = 10
         self.laser_cooldown = 1000  # 1 second in milliseconds
-        self.laser_range = 200
+        self.laser_range = 100
         self.last_laser_time = 0
         self.laser_target = None
         self.laser_line = None
@@ -87,8 +87,9 @@ class TownCentre:
         self.laser_level += 1
         self.laser_damage += 5
         self.laser_cooldown = max(100, self.laser_cooldown - 100)  # Minimum cooldown of 100ms
+        self.laser_range += 2  # Increase range by 2 each level
         
-        print(f"Laser Upgraded - Level: {self.laser_level}, Damage: {self.laser_damage}, Frequency: {1000/self.laser_cooldown:.2f} shots/second")
+        print(f"Laser Upgraded - Level: {self.laser_level}, Damage: {self.laser_damage}, Frequency: {1000/self.laser_cooldown:.2f} shots/second, Range: {self.laser_range}")
 
     def take_damage(self, damage):
         self.health -= damage
@@ -149,48 +150,64 @@ class TownCentre:
             pygame.draw.circle(anti_grav_surface, (0, 100, 255, 30), (self.anti_grav_radius, self.anti_grav_radius), self.anti_grav_radius)
             screen.blit(anti_grav_surface, (self.x - self.anti_grav_radius, self.y - self.anti_grav_radius))
 
-        # Draw the main body of the space station
-        pygame.draw.circle(screen, self.shadow_color, (int(self.x), int(self.y)), self.radius)
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y - 5)), self.radius - 5)
+        # Main central structure
+        # Base structure
+        pygame.draw.polygon(screen, self.base_color, [
+            (self.x - self.radius // 3, self.y - self.radius),
+            (self.x + self.radius // 3, self.y - self.radius),
+            (self.x + self.radius // 4, self.y + self.radius),
+            (self.x - self.radius // 4, self.y + self.radius)
+        ])
         
-        # Draw central dome
-        pygame.draw.ellipse(screen, self.highlight_color, (self.x - self.radius + 10, self.y - self.radius - 15, self.radius * 2 - 20, self.radius))
+        # Angled details
+        pygame.draw.line(screen, self.highlight_color, (self.x - self.radius // 3, self.y - self.radius), (self.x - self.radius // 4, self.y + self.radius), 2)
+        pygame.draw.line(screen, self.shadow_color, (self.x + self.radius // 3, self.y - self.radius), (self.x + self.radius // 4, self.y + self.radius), 2)
         
-        # Draw side structures
-        for angle in [30, 150, 270]:
-            x = self.x + int(math.cos(math.radians(angle)) * (self.radius - 10))
-            y = self.y + int(math.sin(math.radians(angle)) * (self.radius - 10))
-            pygame.draw.circle(screen, self.shadow_color, (x, y), self.radius // 3)
-            pygame.draw.circle(screen, self.color, (x, y - 2), self.radius // 3 - 2)
-
-        # Draw windows
-        for i in range(8):
-            angle = i * math.pi / 4
-            window_x = self.x + int(math.cos(angle) * (self.radius - 15))
-            window_y = self.y + int(math.sin(angle) * (self.radius - 15)) - 5
-            pygame.draw.circle(screen, (255, 255, 200), (window_x, window_y), 5)
+        # Horizontal lines for a more technological look
+        for i in range(1, 6):
+            y = self.y - self.radius + (self.radius * 2 // 5) * i
+            pygame.draw.line(screen, self.highlight_color, (self.x - self.radius // 3, y), (self.x + self.radius // 3, y), 1)
         
-        # Draw antenna
-        pygame.draw.line(screen, (100, 100, 100), (self.x, self.y - self.radius - 15), (self.x, self.y - self.radius - 35), 3)
-        pygame.draw.circle(screen, (255, 0, 0), (self.x, self.y - self.radius - 35), 5)
+        # Additional angled details
+        pygame.draw.line(screen, self.shadow_color, (self.x - self.radius // 6, self.y - self.radius), (self.x, self.y + self.radius // 2), 2)
+        pygame.draw.line(screen, self.highlight_color, (self.x + self.radius // 6, self.y - self.radius), (self.x, self.y + self.radius // 2), 2)
         
-        # Draw energy core
-        core_radius = 15
+        # Top dome
+        pygame.draw.ellipse(screen, self.highlight_color, (self.x - self.radius // 3, self.y - self.radius * 1.2, self.radius * 2 // 3, self.radius // 2))
+        
+        # Rotating rings
+        for i in range(3):
+            y_offset = self.radius * 0.5 * i
+            pygame.draw.ellipse(screen, self.base_color, (self.x - self.radius, self.y - self.radius // 4 + y_offset, self.radius * 2, self.radius // 2), 4)
+            pygame.draw.arc(screen, self.highlight_color, (self.x - self.radius, self.y - self.radius // 4 + y_offset, self.radius * 2, self.radius // 2), math.pi, 2*math.pi, 2)
+            pygame.draw.arc(screen, self.shadow_color, (self.x - self.radius, self.y - self.radius // 4 + y_offset, self.radius * 2, self.radius // 2), 0, math.pi, 2)
+        
+        # Side structures
+        for angle in [30, 150, 210, 330]:
+            x = self.x + int(math.cos(math.radians(angle)) * self.radius * 0.8)
+            y = self.y + int(math.sin(math.radians(angle)) * self.radius * 0.8)
+            pygame.draw.rect(screen, self.base_color, (x - 5, y - 15, 10, 30))
+            pygame.draw.line(screen, self.highlight_color, (x - 5, y - 15), (x - 5, y + 15), 2)
+            pygame.draw.line(screen, self.shadow_color, (x + 5, y - 15), (x + 5, y + 15), 2)
+        
+        
+        # Energy core
+        core_radius = self.radius // 4
         core_surface = pygame.Surface((core_radius * 2, core_radius * 2), pygame.SRCALPHA)
-        pygame.draw.circle(core_surface, (255, 255, 255, 100), (core_radius, core_radius), core_radius)
-        screen.blit(core_surface, (self.x - core_radius, self.y - core_radius - 5))
+        pygame.draw.circle(core_surface, (200, 230, 255, 100), (core_radius, core_radius), core_radius)
+        screen.blit(core_surface, (self.x - core_radius, self.y - core_radius))
         
-        # Draw pulsating energy effect
+        # Pulsating energy effect
         pulse = (math.sin(pygame.time.get_ticks() * 0.01) + 1) * 0.5
         pulse_radius = int(core_radius + pulse * 5)
-        pygame.draw.circle(screen, (255, 255, 255, 50), (self.x, self.y - 5), pulse_radius, 2)
+        pygame.draw.circle(screen, (200, 230, 255, 50), (self.x, self.y), pulse_radius, 2)
 
         # Draw health bar
         health_bar_width = 100
-        health_bar_height = 10
+        health_bar_height = 2
         health_ratio = self.health / self.max_health
-        pygame.draw.rect(screen, (255, 0, 0), (self.x - health_bar_width/2, self.y + self.radius + 10, health_bar_width, health_bar_height))
-        pygame.draw.rect(screen, (0, 255, 0), (self.x - health_bar_width/2, self.y + self.radius + 10, health_bar_width * health_ratio, health_bar_height))
+        pygame.draw.rect(screen, (255, 0, 0), (self.x - health_bar_width // 2, self.y + self.radius + 10, health_bar_width, health_bar_height))
+        pygame.draw.rect(screen, (0, 255, 0), (self.x - health_bar_width // 2, self.y + self.radius + 10, int(health_bar_width * health_ratio), health_bar_height))
 
         # Draw laser if active
         if self.laser_line:
